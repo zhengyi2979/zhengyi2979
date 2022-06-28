@@ -1,0 +1,81 @@
+import warnings
+warnings.filterwarnings('ignore')
+
+import matplotlib.pyplot as plt
+%matplotlib inline
+import pandas as pd
+import os
+os.chdir('/Users/zhengyi/Downloads/')
+df = pd.read_excel('index kline.xlsx', sheet_name = '沪深300')
+from scipy.signal import argrelextrema
+n = int(input('n = '))
+h = df['high'].to_numpy()
+h = argrelextrema(h, np.greater,order = n)
+h = h[0]
+l = df['low'].to_numpy()
+l = argrelextrema(l,np.less,order = n)
+l = l[0]
+x = []
+x_= df['date'].tolist()
+for a in h:
+     x.append(x_[a])
+for a in l:
+    x.append(x_[a])
+x.sort()
+y = df[df['date'].isin(x)]
+y = y['close']
+y = y.tolist()
+up = float(input('上涨幅度（小数）：'))
+down = float(input('下跌幅度（小数）：'))
+t = int(input('最短持续时间：'))
+count = 1
+new_y = []
+while count <= len(y)-1:
+    a = x[count]-x[count-1]
+    a = (a / np.timedelta64(1, 'D'))
+    if count%2 !=1:
+        if a >= t and (-(y[count-1]-y[count])/y[count-1]) >= down:
+            new_y.append(y[count-1])
+            new_y.append(y[count])
+            count += 1
+        else:
+            count += 1
+    else:
+        if a >= t and ((y[count]-y[count-1])/y[count-1]) >= up:
+            new_y.append(y[count-1])
+            new_y.append(y[count])
+            count += 1
+        else:
+            count += 1
+tp = []
+for b in y:
+    if b not in new_y:
+        tp.append(b)
+    elif tp != []:
+        max_ = max(tp)
+        min_ = min(tp)
+        t_d = x[y.index(max_)]- x[y.index(min_)]
+        t_d = abs((t_d / np.timedelta64(1, 'D')))
+        if ((tp.index(max_)>tp.index(min_) and (max_-min_)/min_ >= up)or
+        (tp.index(max_)<tp.index(min_) and (max_-min_)/min_ >= down))and t_d >= t:
+            new_y.append(max_)
+            new_y.append(min_)
+            tp = []
+        
+        else: 
+            new_y.append(tp[0])
+            new_y.append(tp[-1])
+            tp = []
+new_x = df[df['close'].isin(new_y)]
+new_x = new_x['date']
+new_x = new_x.tolist()
+new_x.sort()
+new_y = df[df['date'].isin(new_x)]
+new_y = new_y['close']
+new_y = new_y.tolist()
+plt.rcParams["figure.figsize"] = (20,10)
+fig,ax = plt.subplots()
+ax2 = ax.twinx()
+ax.plot(x,y,color = 'orange')
+ax2.plot(new_x,new_y,color = 'blue')
+plt.show()
