@@ -1,0 +1,49 @@
+#国泰君安
+ema_12 = (df['close']+df['close'].shift(1)+df['close'].shift(2)+df['close'].shift(3)+df['close'].shift(4)
+                         +df['close'].shift(5)+df['close'].shift(6)+df['close'].shift(7)+df['close'].shift(8)
+                         +df['close'].shift(9)+df['close'].shift(10)+df['close'].shift(11))/12
+ema12 = ema_12.shift(-1)*11/13+df['close']+2/13
+ema_26 = (df['close']+df['close'].shift(1)+df['close'].shift(2)+df['close'].shift(3)+df['close'].shift(4)
+                         +df['close'].shift(5)+df['close'].shift(6)+df['close'].shift(7)+df['close'].shift(8)
+                         +df['close'].shift(9)+df['close'].shift(10)+df['close'].shift(11)+df['close'].shift(12)
+                         +df['close'].shift(13)+df['close'].shift(14)+df['close'].shift(15)+df['close'].shift(16)
+                         +df['close'].shift(17)+df['close'].shift(18)+df['close'].shift(19)+df['close'].shift(20)
+                         +df['close'].shift(21)+df['close'].shift(22)+df['close'].shift(23)+df['close'].shift(24)
+                         +df['close'].shift(25))/26
+ema26 = ema_26.shift(-1)*25/27+df['close']*2/27
+dif = ema12-ema26
+dem_9 = (dif+dif.shift(-1)+dif.shift(-2)+dif.shift(-3)+dif.shift(-4)+dif.shift(-5)+dif.shift(-6)+dif.shift(-7)
+         +dif.shift(-8))/9
+dem = dem_9.shift(-1)*8/10+dif*2/10
+#用（DIF-DEA）×2即为MACD柱状图。
+dea = (dif-dem)*2
+x = df['date']
+new_df =pd.concat([x,dea],axis = 1)
+new_df = new_df.dropna()
+x = new_df['date']
+dea = new_df['close']
+tl = []
+new_y = []
+for d in dea:
+    if tl !=[]:
+        if d <= 0 and tl[-1] >=0 and  all(v >= 0 for v in tl):
+            max_ = max(tl)
+            new_y.append(max_)
+            tl = []
+        elif d >= 0 and tl[-1] <=0 and all(v <= 0 for v in tl):
+            min_ = min(tl)
+            new_y.append(min_)
+            tl = []
+    else:
+        tl.append(d)
+new_df = new_df[new_df['close'].isin(new_y)]
+new_x = new_df['date'].tolist()
+new_x.sort()
+new_y = new_df['close']
+print(len(new_x),len(new_y))
+plt.rcParams["figure.figsize"] = (15,8)
+fig,ax = plt.subplots()
+ax2 = ax.twinx()
+ax.plot(x,dea,color = 'orange')
+ax2.plot(new_x,new_y,color = 'blue')
+plt.show()
