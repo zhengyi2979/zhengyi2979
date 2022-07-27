@@ -1,0 +1,68 @@
+#兴安
+import numpy as np
+import warnings
+warnings.filterwarnings('ignore')
+import matplotlib.pyplot as plt
+%matplotlib inline
+import pandas as pd
+import os
+os.chdir('/Users/zhengyi/Downloads/')
+df = pd.read_excel('index kline.xlsx', sheet_name = '沪深300')
+close = df['close']
+ema12 = 2*(close/13)
+ema12 = ema12+11*(ema12.shift(1)/13)
+ema26 = 2*(close/27)
+ema26 = ema26+25*(ema26.shift(1)/27)
+dif = ema12-ema26
+dea = 2*dif/10
+dea = dea+8*dea.shift(1)/10
+#n = int(input('阀值 ； '))
+n = 30
+dir_ = np.where(dif-dea>=n,1,np.where(dif-dea<=-n,-1,''))
+a = df['high']-df['low']
+b = df['high']-df['close']
+c = df['close'].shift(-1)-df['low']
+tr = [a,b,c]
+tr = pd.DataFrame(tr)
+tr = tr.max()
+ws = 100
+atr = []
+i = 0
+while i < len(tr) - ws:
+    w = tr[i:i+ws]
+    wa = round(sum(w) / ws, 2)
+    atr.append(wa)
+    i +=1
+integral = np.where(dif == dea,0,dif - dea) #?
+integral = integral[:4145]
+rate = 2
+s = []
+for x in atr:
+    x = rate * x
+    s.append(x)
+roll = np.roll(dir_,-1)
+ns = []
+for x in s:
+    ns.append(-x)
+dir_ = np.where(((integral >= s)|((roll == 1) & (integral >= ns))),1,
+                np.where((integral <= s)|((roll == -1) & (integral <= ns)),-1,''))
+#取except：ex = np.where((（dir == 1)&(df['close'] <= 前一个低点)）｜
+#（（dir == -1)&(df['close'] >= 前一个高点)），-1，1 )
+# ex = np.where((roll != dir)|((dir == 1)&(df['close'] >= 前一个高点））
+#｜(（dir == -1)&(df['close'] <= 前一个低点)），1，-1)
+status = dir_*ex
+t = 0
+while t < len(df):
+    if status[t] == status[t-1]:
+        if status[t]  ==1:
+            #寻找并更新区间最大值
+            t += 1
+        else:
+            #继续寻找并更新区间最小值
+            t +=1
+    elif status[t] == 1:
+        #记录区间极小值为低点，并开始寻找区间极大值
+        t+=1
+    else:
+        #记录区间极大值为高点，并寻找区间极小值
+        t+=1
